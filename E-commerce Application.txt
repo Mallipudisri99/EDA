@@ -1,0 +1,935 @@
+E-Commerce Application CRUD operations Using HTML,CSS,Bootstrap,JAVAScript & Django Framework:
+=========================================================================================
+Project Requirement
+===========================
+FrontEnd Framework:HTML,CSS,Bootstrap,JAVAScript
+BackEnd Framework:Django 
+DataBase:DqSqlite3
+IDET: Visual Studio Code
+
+===========================
+
+Step_1:
+=======
+pip install django==3.2
+
+Step_2:
+=======
+Create django project name as follows
+
+django-admin startproject 
+
+Step_3:
+=======
+
+Create the virtual environment for project Development
+
+Create virtaul environment inside Work_Space_Area using the following 
+command
+
+python -m venv Env
+
+To activate VM hit following command
+
+cd Env\Scripts
+
+activate
+
+Step_4:
+======
+Now you can see the Virtual Environment is activated successfully. 
+then type the following command. come to backward
+
+cd ../..
+
+
+Step_5:
+======
+Install django framework on the top of VM machine
+
+pip install django==4.0
+
+If any problem at time of installing django on VM update the 
+pip command
+
+
+Step_6:
+========
+Creating an application in E-Commerce Application
+
+python manage.py startapp Store
+
+Step_7:
+=======
+Store we have to added in to the setting.py
+
+ INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'Store',
+]
+
+Step_8:
+=======
+E-Commerce Application---->Store---->models.py:
+===================================================
+from django.db import models
+from django.contrib.auth.models import User
+
+class Customer(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
+    name = models.CharField(max_length=200, null=True)
+    email = models.CharField(max_length=200, null=True)
+
+    def __str__(self):
+        return self.name
+
+class Product(models.Model):
+    name = models.CharField(max_length=200)
+    price = models.FloatField()
+    digital = models.BooleanField(default=False, blank=True)
+    image = models.ImageField(null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def imageURL(self):
+        try:
+            url = self.image.url
+        except:
+            url = ''
+        return url 
+
+class Order(models.Model):
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null=True, blank=True)
+    date_ordered = models.DateTimeField(auto_now_add=True)
+    complete = models.BooleanField(default=False, blank=False)
+    transaction_id = models.CharField(max_length=200, null=True)
+
+    def __str__(self):
+        return str(self.id)
+
+    @property
+    def shipping(self):
+        shipping = False
+        order_items = self.orderitem_set.all()
+        for item in order_items:
+            if not item.product.digital:
+                shipping = True
+        return shipping
+
+    @property
+    def get_cart_total(self):
+        order_items = self.orderitem_set.all()
+        total = sum([item.get_total for item in order_items])
+        return total
+
+    @property
+    def get_cart_items(self):
+        order_items = self.orderitem_set.all()
+        total = sum([item.quantity for item in order_items])
+        return total
+
+class OrderItem(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True)
+    quantity = models.IntegerField(default=0, null=True, blank=True)
+    date_added = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def get_total(self):
+        total = self.product.price * self.quantity
+        return total
+
+class ShippingAddress(models.Model):
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null=True)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True)
+    address = models.CharField(max_length=200, null=False)
+    city = models.CharField(max_length=200, null=False)
+    state = models.CharField(max_length=200, null=False)
+    zipcode = models.CharField(max_length=200, null=False)
+    date_added = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.address
+
+
+Step_9: --->For FrontEnd Integration(templates)
+====================================
+Create directories of templates and static in the project level as follows
+
+Ecart
+|
+Store
+|
+templates
+|
+static
+|
+manage.py
+
+Step_10: --->we have to added in to the setting.py
+=======================================
+import os
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+TEMPLATES_DIR=os.path.join(BASE_DIR,'templates')
+STATIC_DIR=os.path.join(BASE_DIR,'static')
+
+
+
+Step_11:
+========
+Add the TEMPLATES_DIR into the TEMPLATES---> settings.py
+
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [TEMPLATES_DIR],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+
+
+step_12:
+========
+Add the dependencies of templates and staticfiles in to the settings.py 
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/4.2/howto/static-files/
+
+STATIC_URL = '/static/'
+STATICFILES_DIRS=[
+    STATIC_DIR,
+]
+MEDIA_URL='/images/'
+MEDIA_ROOT =os.path.join(BASE_DIR, 'static/images')
+
+
+Step_13:
+========
+E-Commerce Application---->Store---->admin.py:
+===================================================
+
+from django.contrib import admin
+from Store.models import Customer
+from Store.models import Product
+from Store.models import Order
+from Store.models import OrderItem
+from Store.models import ShippingAddress
+
+class CustomerAdmin(admin.ModelAdmin):
+    list_display=['user','name','email']
+admin.site.register(Customer,CustomerAdmin)
+
+class ProductAdmin(admin.ModelAdmin):
+    list_display=['name','price','digital']
+admin.site.register(Product,ProductAdmin)
+
+class OrderAdmin(admin.ModelAdmin):
+    list_display=['customer','date_ordered','complete','transaction_id']
+admin.site.register(Order,OrderAdmin)
+
+class OrderItemAdmin(admin.ModelAdmin):
+    list_display=['product','order','quantity','date_added']
+admin.site.register(OrderItem,OrderItemAdmin)
+
+class ShippingAdmin(admin.ModelAdmin):
+    list_display=['customer','order','address','city','state','zipcode','date_added']
+admin.site.register(ShippingAddress,ShippingAdmin)
+
+
+
+Step_14:
+========
+E-Commerce Application---->Store---->views.py:
+===================================================
+from django.shortcuts import render
+from django.http import JsonResponse
+import json
+from .models import Order,Product,OrderItem
+
+def Home(request):
+    return render(request,"Ecommerce/Home.html")
+
+def store(request):
+    if request.user.is_authenticated:
+        customer=request.user.customer
+        order,created=Order.objects.get_or_create(customer=customer, complete=False)
+        items= order.orderitem_set.all()
+        cartItems =order.get_cart_items
+    else:
+        items=[]
+        order={'get_cart_total':0, 'get_cart_items':0, 'shipping':False}
+        cartItems=order['get_cart_items']
+    
+    products=Product.objects.all()
+    context={'items':items,'products':products,'cartItems':cartItems}
+    return render(request,"Ecommerce/store.html",context)
+
+def Login(request):
+    return render(request,"Ecommerce/login.html")
+
+def Cart(request):
+    if request.user.is_authenticated:
+        customer=request.user.customer
+        order,created=Order.objects.get_or_create(customer=customer, complete=False)
+        items= order.orderitem_set.all()
+        cartItems =order.get_cart_items
+    else:
+        items=[]
+        order={'get_cart_total':0, 'get_cart_items':0,'shipping':False}
+        cartItems=order['get_cart_items']
+    context={'items':items,'order':order,'cartItems':cartItems}
+    return render(request,"Ecommerce/cart.html",context)
+
+def Checkout(request):
+    if request.user.is_authenticated:
+        customer=request.user.customer
+        order,created=Order.objects.get_or_create(customer=customer, complete=False)
+        items= order.orderitem_set.all()
+        cartItems =order.get_cart_items
+    else:
+        items=[]
+        order={'get_cart_total':0, 'get_cart_items':0 ,'shipping':False}
+        cartItems=order['get_cart_items']
+    context={'items':items,'order':order,'cartItems':cartItems}
+    return render(request,"Ecommerce/checkout.html",context)
+
+
+def updateItem(request):
+    data= json.loads(request.body)
+    productId = data['productId']
+    action=data['action']
+
+    print('action:',action)
+    print('productId:',productId)
+    customer = request.user.customer
+    product = Product.objects.get(id=productId)
+    order,created=Order.objects.get_or_create(customer=customer, complete=False)
+
+    orderItem,created = OrderItem.objects.get_or_create(order=order, product=product)
+
+    if action == 'add':
+        orderItem.quantity =(orderItem.quantity + 1)
+    elif action == 'remove':
+        OrderItem.quantity = (orderItem.quantity + 1)
+
+    orderItem.save()
+
+    if orderItem.quantity<=0:
+        orderItem.delete()
+        
+
+    return JsonResponse('Item was added',safe=False)
+
+Step_15:
+=========
+In the templates --->create Directory-->Ecommerce-->inside the create .html files
+
+for static --->create individual Directory for CSS,images,js inside that Directories 
+create the .css, images(.jpg or .png)  and .js files.
+
+Step_16:
+=======
+E-Commerce Application---->templates---->Ecommerce-->Home.html:
+===============================================================
+
+<!doctype html>
+{% load static %}
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="{% static 'CSS/Home.css'%}">
+    <link rel="icon" href="{% static 'images/logo.png'  %}" size="18*18">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.2.1/dist/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    
+
+    <title>Ecommerce</title>
+  </head>
+  <body class="bg-primary">
+    <div class="list-group-item bg-primary">
+    
+    <a href="#">
+        <img src="{% static 'images/logo.png'  %}">
+    </a>
+    <a href="{% url 'login1' %}" class="btn btn-warning">Login</a>
+    <a href="{% url 'cart1' %}">
+        <img id="cart-icon" src="{% static 'images/cart_icon.png'  %}">
+    </a>
+    </div>
+    <div class="list-group-item bg-primary">
+        <a href="{% url 'store1' %}"><button>Store</button></a>
+    </div>
+    <br>
+    
+    <marquee behavior="" direction="">
+        <img src="{% static 'images/offer1.jpeg'  %}" size="200px">&nbsp;&nbsp;
+        <img src="{% static 'images/offer2.jpg'  %}">&nbsp;&nbsp;
+        <img src="{% static 'images/offer3.png'  %}">
+            
+    </marquee>
+
+
+    
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.6/dist/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.2.1/dist/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+  </body>
+</html>
+
+
+Step_17:
+=======
+E-Commerce Application---->templates---->Ecommerce-->store.html:
+================================================================
+
+<DOCTYPE html>
+{% load static %}
+<html>
+    <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="{% static 'CSS/store.css'%}">
+
+    <link rel="icon" href="{% static 'images/logo.png'  %}" size="18*18">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.2.1/dist/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    
+    <script type="text/javascript">
+        var user='{{request.user}}'
+
+        function getToken(name) {
+            var cookieValue = null;
+            if(document.cookie && document.cookie !== '') {
+                var cookies =( document.cookie.split(';'));
+                for(var i=0; i < cookies.length; i++) {
+                    var cookie=cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if(cookie.substring(0,name.length + 1) === (name + '=')) 
+                    {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        var csrftoken = getToken('csrftoken');
+      </script>
+
+    <title>Ecommerce</title>
+  </head>
+  <body class="bg-primary">
+    <a href="{% url 'store2' %}">
+        <img src="{% static 'images/logo.png'  %}">
+    </a>
+    <a href="{% url 'login1' %}" class="btn btn-warning">Login</a>
+    <a href="{% url 'cart1' %}">
+        <img id="cart-icon" src="{% static 'images/cart_icon.png'  %}">
+    </a>
+    <br>
+    <hr>
+    <div class="container off-set-4">
+        <div class="list-group"></div>
+            <div class="list-group-item bg-primary">
+                <a href="{% url 'store2' %}"><button>Home</button></a>
+                <a href="#"><button>Store</button></a>
+            </div>
+        </div>
+    </div>
+    <br><br>
+    <div class="container">
+        <div class="row">
+            {% for product in products %}
+            <div class="cd-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="card-header">
+                            <div class="card-img-top">
+                                <img src="{{product.imageURL}}" width="400px" height="400px">
+                            </div>
+                            
+                            <div class="card-img-bottom"><h6><strong>{{product.name}}</strong></h6></div>
+                            <hr>
+                            <div class="card-btn-bottom">
+                                <button data-product={{product.id}} data-action="add" class="btn btn-outline-dark add-btn update-cart" id="B">Add to Cart</button>
+                                <button>View</button>
+                                <h4>${{product.price|floatformat:2}}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> 
+           <br> <hr>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.6/dist/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.2.1/dist/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+    <script type="text/JavaScript" src="{% static 'js/cart.js' %}"></script>
+  </body>
+</html>
+
+
+
+Step_18:
+=======
+E-Commerce Application---->templates---->Ecommerce-->cart.html:
+================================================================
+
+
+<!doctype html>
+{% load static %}
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="{% static 'CSS/cart.css'%}">
+    <link rel="icon" href="{% static 'images/logo.png'  %}" size="18*18">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.2.1/dist/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <script type="text/javascript">
+        var user='{{request.user}}'
+
+        function getToken(name) {
+            var cookieValue = null;
+            if(document.cookie && document.cookie !== '') {
+                var cookies =( document.cookie.split(';'));
+                for(var i=0; i < cookies.length; i++) {
+                    var cookie=cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if(cookie.substring(0,name.length + 1) === (name + '=')) 
+                    {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        var csrftoken = getToken('csrftoken');
+      </script>
+
+    <title>Ecommerce</title>
+  </head>
+  <body class="bg-white">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="box-element">
+                <a class="btn btn-outline-dark" href="{% url 'cart2' %}" id="A">&#x2190; Continue Shopping</a>
+                <br>
+                <br>
+                <div class="card">
+                    <div class="card-body">
+                        <table class="table">
+                            <tr>
+                                <th><h5>Items:<strong>{{order.get_cart_items}}</strong></h5></th>
+                                <th><h5>Total:<strong>${{order.get_cart_total|floatformat:2}}</strong></h5></th>
+                                <th>
+                                    <a style="float:right; margin:5px" class="btn btn-success" href="{% url 'check1' %}">Checkout</a>
+                                </th>
+                    </tr>
+
+                </table>
+            </div>
+            </div>
+            <br>
+                <div class="container text-center">
+                    <div class="row">
+                        <div class="col">
+                            
+                            <div style="flex:2"></div>
+                        </div>
+                        <div class="col">
+                            
+                            <div style="flex:2"><strong>Items</strong></div>
+                        </div>
+                        <div class="col">
+                            <div style="flex:1"><strong>Price</strong></div>
+                        </div>
+                        <div class="col">
+                            <div style="flex:1"><strong>Quantity</strong></div>
+                        </div>
+                        <div class="col">
+                            <div style="flex:1"><strong>Total</strong></div>
+                        </div>
+                    </div>
+                </div>
+                {% for item in items %}
+                <div class="row">
+                    <div class="col">
+                            
+                        <div style="flex:2"><img class="row-image" src="{{item.product.imageURL}}"></div>
+                    </div>
+                    <div class="col">
+                        
+                        <div style="flex:2">{{item.product.name}}</div>
+                    </div>
+                    <div class="col">
+                        <div style="flex:1">${{item.product.price|floatformat:2}}</div>
+                    </div>
+                    <div class="col">
+                        <p class="quantity">{{item.quantity}}</p>
+                        <div class="quantity">
+                            <img data-product={{item.product.id}} data-action="add" class="chg-quantity update-cart" src="{% static 'images/up2.png'  %}">
+                            <img data-product={{item.product.id}} data-action="remove" class="chg-quantity update-cart" src="{% static 'images/down3.png'  %}">
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div style="flex:1"><p>${{item.get_total|floatformat:2}}</p></div>
+                    </div>
+                </div> 
+                <br>
+                {% endfor %}
+                </div>
+            </div>
+                
+            </div>
+            </div>
+        </div>
+    </div>
+
+    
+        
+   
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.6/dist/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.2.1/dist/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+    <script type="text/JavaScript" src="{% static 'js/cart.js' %}"></script>
+  </body>
+</html>
+
+
+
+
+
+Step_19:
+=======
+E-Commerce Application---->templates---->Ecommerce-->checkout.html:
+================================================================
+
+<!doctype html>
+{% load static %}
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="{% static 'CSS/Checkout.css'%}">
+    <link rel="icon" href="{% static 'images/logo.png'  %}" size="18*18">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.2.1/dist/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+
+
+    <title>Ecommerce</title>
+  </head>
+  <body class="bg-info">
+    <div class="row">
+      <div class="col-lg-6">
+        <div class="container" id="form-wrapper">
+
+          <form id="form">
+            <div id="user-info">
+              <div class="form-field">
+                <br>
+                <br>
+                <input required class="form-control" type="text" name="name" placeholder="Name..">
+              </div>
+              <br>
+              <div class="form-field">
+                <input required class="form-control" type="email" name="email" placeholder="Email..">
+              </div>
+              
+            </div>
+            <div id="shipping-info">
+              <hr>
+              <p>Shipping Infromation</p>
+              <hr>
+              <div class="form-field">
+                <input class="form-control" type="text" name="address" placeholder="Address..">
+              </div>
+              <br>
+              <div class="form-field">
+                <input class="form-control" type="text" name="city" placeholder="City">
+              </div>
+              <br>
+              <div class="form-field">
+                <input class="form-control" type="text" name="state" placeholder="State">
+              </div>
+              <br>
+              <div class="form-field">
+                <input class="form-control" type="text" name="zipcode" placeholder="Zip code..">
+              </div>
+            </div>
+            <hr>
+            <input id="form-button" class="btn btn-success"type="submit" value="Continue">
+            
+          </form>
+        </div>
+      </div>
+      <br>
+      
+      <div class="container" id="P">
+        <div class="box-element hidden" id="payment-info">
+          <strong>Paypal Options</strong>
+          <button id="make-payment">Make Payment</button>
+
+        </div>
+      </div>
+
+<div class="card">
+<div class="col-lg-6">
+  <div class="box-element">
+    <div class="box-element">
+      <br>
+      <a class="btn btn-outline-dark" href="{% url 'cart1' %}">&#x2190; Back to cart</a>
+      <hr>
+      <h3>Order Summary</h3>
+      <hr>
+      
+        <div class="container">
+          {% for item in items %}
+          <div class="cart-row">
+            <div class="col" id="check-img">
+              <div ><img class="row-image" src="{{item.product.imageURL}}"></div>
+            </div>&nbsp;
+            <div class="col" >
+              <div><p>{{item.product.name}}</p></div>
+          </div>&nbsp;&nbsp;
+          <div class="col" >
+              <div><p>${{item.product.price}}</p></div>
+          </div>
+          <div class="col">
+              <div><p>{{item.quantity}}</p></div>
+          </div>&nbsp;&nbsp;
+          {% endfor %}
+        </div>
+        <hr>
+        <h5>Items:{{order.get_cart_items}}</h5>
+        <h5>Total:${{order.get_cart_total}}</h5>
+    </div>
+  
+</div>
+</div>
+<script type="'text/javascript">
+  var user='{{request.user}}'
+
+  function getToken(name) {
+      var cookieValue = null;
+      if(document.cookie && document.cookie !== '') {
+          var cookies =( document.cookie.split(';'));
+          for(var i=0; i < cookies.length; i++) {
+              var cookie=cookies[i].trim();
+              // Does this cookie string begin with the name we want?
+              if(cookie.substring(0,name.length + 1) === (name + '=')) 
+              {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+              }
+          }
+      }
+      return cookieValue;
+  }
+  var csrftoken = getToken('csrftoken');
+
+
+
+
+
+
+
+
+
+
+
+
+  var shipping = '{{order.shipping}}'
+
+  if(shipping == 'False'){
+    document.getElementById('shipping-info').innerHTML = ''
+  }
+
+  var form =document.getElementById('form')
+  form.addEventListener('submit',function(e){
+    e.preventDefault()
+    console.log('Form submitted...')
+    document.getElementById('form-button').classList.add("hidden");
+    document.getElementById('payment-info').classList.remove("hidden");
+
+  })
+
+  document.getElementById('make-payment').addEventListener('click', function(e){
+    submitFormData()
+  })
+  function submitFormData(){
+    console.log("Payment button clicked")
+  }
+</script>
+   
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.6/dist/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.2.1/dist/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+    <script type="text/JavaScript" src="{% static 'js/cart.js' %}"></script>
+    
+  </body>
+</html>
+
+
+Step_20:
+=======
+E-Commerce Application---->templates---->Ecommerce-->login.html:
+================================================================
+
+<!doctype html>
+{% load static %}
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="{% static 'CSS/login.css'%}">
+    <link rel="icon" href="{% static 'images/logo.png'  %}" size="18*18">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.2.1/dist/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+
+    <title>Login</title>
+  </head>
+  <body class="bg-white">
+    <div class="list-group-item bg-primary">
+    
+    <a href="#">
+        <img src="{% static 'images/logo.png'  %}">
+    </a>
+    <a href="#" class="btn btn-warning">Login</a>
+    <a href="#">
+        <img id="cart-icon" src="{% static 'images/cart_icon.png'  %}">
+    </a>
+    </div>
+    <div class="list-group-item ">
+        <a href="{% url 'login2' %}"><button>Store</button></a>
+    </div>
+    <br>
+    <div class="container bg-info">
+        <h3 class="text-center text-white bg-primary">WELCOME TO CUSTOMER LOGIN</h3>
+        <div class="row">
+            <div class="col-md-12">
+                
+                <div class="form-group">
+
+                    <form action="#" method="post">
+                        <div class="input-group ">
+                            <span class="input-group-addon ">
+                                <label for="">Username</label>
+                            <input type="text" placeholder="Username" required autocomplete="off">
+                        </div>
+                        <br>
+                        <div class="input-group">
+                            <span class="input-group-addon">
+                                <label for="">Password</label>
+                            </span>&nbsp;
+                            <input type="text" placeholder="Password" required autocomplete="off">
+                        </div>
+                        <br>
+                        <br>
+                        <input type="submit" value=Login class="btn1 btn-warning ">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+        
+   
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.6/dist/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.2.1/dist/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+  </body>
+</html>
+
+
+
+Step_21:
+=======
+After that run the migration command
+
+python manage.py makemigrations
+
+
+Step_22:
+========
+After done successfully. then type following command
+
+python manage.py migrate
+
+Step_23:
+========
+After done successfully. then type following command to Create the superuser
+
+python manage.py createsuperuser
+
+
+Step_24:
+========
+After done successfully. Create the Username,email,password,confirm
+ passowrd to authenticate the admin dashboard
+
+
+Step_24:
+========
+After done successfully. then type following command to run the server
+
+python manage.py runserver
+
+
+
+
+
+
+
